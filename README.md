@@ -8,6 +8,8 @@ Installation requires a browser extension such as [Violentmonkey](https://violen
 
 ![Allow cors - Tamper Monkey](images/allow-cors-tamper-monkey.png?raw=true "Allow cors - Tamper Monkey")
 
+*Known issues: If username/password access is enabled in stash, Firefox + Tampermonkey does not work, but Firefox + Violentmonkey works. Both work in Chrome*
+
 ## Developing
 
 Each userscript source is split into two files:
