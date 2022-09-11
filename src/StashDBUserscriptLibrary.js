@@ -377,8 +377,8 @@
                                     sceneState.ignored = false;
                                     sceneEl.classList.remove('stash_id_ignored');
                                     markerEl.querySelector('a').innerHTML = timesLabel;
-                                    GM.setValue(stashId, JSON.stringify(sceneState));
                                     menuEl.remove();
+                                    await GM.setValue(stashId, JSON.stringify(sceneState));
                                 });
                     
                                   menuEl.append(ignoreEl);
@@ -392,8 +392,8 @@
                                     sceneState.wanted = false;
                                     sceneEl.classList.remove('stash_id_wanted');
                                     markerEl.querySelector('a').innerHTML = timesLabel;
-                                    GM.setValue(stashId, JSON.stringify(sceneState));
                                     menuEl.remove();
+                                    await GM.setValue(stashId, JSON.stringify(sceneState));
                                 });
                     
                                   menuEl.append(wishlistEl);
@@ -408,8 +408,23 @@
                                     sceneState.wanted = true;
                                     sceneEl.classList.add('stash_id_wanted');
                                     markerEl.querySelector('a').innerHTML = starLabel;
-                                    GM.setValue(stashId, JSON.stringify(sceneState));
                                     menuEl.remove();
+                                    if (!sceneState.data) {
+                                        const data = (await this.findStashboxSceneByStashId(stashId))?.data?.findScene;
+                                        const { title = '', release_date = '', duration } = data;
+                                        const studioName = data?.studio?.name || '';
+                                        const studioId = data?.studio?.id || '';
+                                        const cover = data?.images[0]?.url;
+                                        sceneState.data = {
+                                            title,
+                                            release_date,
+                                            duration,
+                                            studioName,
+                                            studioId,
+                                            cover
+                                        }
+                                    }
+                                    await GM.setValue(stashId, JSON.stringify(sceneState));
                                 });
 
                                 ignoreEl.addEventListener("click", async evt => {
@@ -418,8 +433,8 @@
                                     sceneState.ignored = true;
                                     sceneEl.classList.add('stash_id_ignored');
                                     markerEl.querySelector('a').innerHTML = clearLabel;
-                                    GM.setValue(stashId, JSON.stringify(sceneState));
                                     menuEl.remove();
+                                    await GM.setValue(stashId, JSON.stringify(sceneState));
                                 });
 
                                 menuEl.append(wishlistEl);
@@ -646,6 +661,7 @@
                         if (document.getElementById('wishlist')) {
                             document.getElementById('wishlist').remove();
                             document.getElementById('wishlist-header').remove();
+                            document.getElementById('wishlist-pagination').remove();
                         }
                     }
 
@@ -667,28 +683,143 @@
                     this.dispatchEvent(new CustomEvent('page', { 'detail': { stashType, stashId, action } }));
                 });
             }
+            createPaginationButtons(maxPages, page, paginationEl) {
+                let start = Math.max(page - 2, 1);
+                let end = Math.min(start + 4, maxPages);
+                if (maxPages <= 5) {
+                    start = 1;
+                    end = maxPages;
+                }
+                else if (end - start < 4) {
+                    start = Math.max(end - 4, 1);
+                }
+
+                const paginationButtonHandler = evt => {
+                    const page = getClosestAncestor(evt.target, '.page-item').querySelector('.page-link').dataset.page;
+                    evt.preventDefault();
+                    evt.stopPropagation();
+                    let url = window.location.href.split('?')[0];
+                    if (page > 1) {
+                        url += `?page=${page}`;
+                    }
+                    window.location = url;
+                }
+
+                let pageEl;
+                if (start > 1) {
+                    pageEl = createElementFromHTML(`<li class="page-item">
+                        <a class="page-link" data-page="1" role="button" tabindex="0" href="#"><span aria-hidden="true">«</span><span class="visually-hidden">First</span></a>
+                    </li>`);
+                    pageEl.addEventListener('click', paginationButtonHandler);
+                    paginationEl.appendChild(pageEl);
+                }
+                pageEl = createElementFromHTML(`<li class="page-item ${page === 1 ? 'disabled' : ''}">
+                    <a class="page-link" data-page="${page-1}">
+                        <span aria-hidden="true">‹</span>
+                        <span class="visually-hidden">Previous</span>
+                    </a>
+                </li>`);
+                if (page !== 1) {
+                    pageEl.addEventListener('click', paginationButtonHandler);
+                }
+                paginationEl.appendChild(pageEl);
+                const spanCurrent = ` <span class="visually-hidden">(current)</span>`;
+                for (let i = start; i <= end; i++) {
+                    pageEl = createElementFromHTML(`<li class="page-item ${page === i ? 'active' : ''}">
+                        <a class="page-link" data-page="${i}" role="button" tabindex="0" href="#">${i}${page === i ? spanCurrent : ''}</a>
+                    </li>`);
+                    pageEl.addEventListener('click', paginationButtonHandler);
+                    paginationEl.appendChild(pageEl);
+                }
+                pageEl = createElementFromHTML(`<li class="page-item ${page === maxPages ? 'disabled' : ''}">
+                    <a class="page-link" data-page="${page+1}" role="button" tabindex="0" href="#">
+                        <span aria-hidden="true">›</span>
+                        <span class="visually-hidden">Next</span>
+                    </a>
+                </li>`);
+                if (page !== maxPages) {
+                    pageEl.addEventListener('click', paginationButtonHandler);
+                }
+                paginationEl.appendChild(pageEl);
+                if (end < maxPages) {
+                    pageEl = createElementFromHTML(`<li class="page-item">
+                        <a class="page-link" data-page="${maxPages}" role="button" tabindex="0" href="#"><span aria-hidden="true">»</span><span class="visually-hidden">Last</span></a>
+                    </li>`);
+                    pageEl.addEventListener('click', paginationButtonHandler);
+                    paginationEl.appendChild(pageEl);
+                }
+            }
             async viewWishlist() {
                 waitForElementClass('NarrowPage', async (className, el) => {
-                    el[0].appendChild(createElementFromHTML(`<div id="wishlist-header" class="d-flex"><h3 class="me-4">Wishlist</h3></div>`));
-                    const scenesList = createElementFromHTML(`<div id="wishlist" class="scenes-list"><div class="row"></div></div>`);
-                    el[0].appendChild(scenesList);
-                    const scenesRow = scenesList.firstChild;
 
                     const keys = await GM.listValues();
-                    const stashIds = [];
+                    let stashIds = [];
+                    const sceneStates = {};
                     for (const key of keys) {
                         if (key.startsWith('stash')) continue;
                         const data = JSON.parse(await GM.getValue(key));
                         if (data.wanted) {
                             stashIds.push(key);
+                            sceneStates[key] = data;
                         }
                     }
+
+                    el[0].appendChild(createElementFromHTML(`<div id="wishlist-header" class="d-flex"><h3 class="me-4">Wishlist</h3></div>`));
+
+                    const pagination = createElementFromHTML(`<div id="wishlist-pagination" class="d-flex mt-2 align-items-start">
+                        <div class="ms-auto mt-auto d-flex">
+                            <b class="me-4 mt-2">${stashIds.length.toLocaleString()} results</b>
+                            <ul class="pagination">
+                            </ul>
+                        </div>
+                    </div>`);
+                    el[0].appendChild(pagination);
+
+                    const searchParams = new URLSearchParams(window.location.search);
+                    let page = parseInt(searchParams.get('page') || 1);
+                    const pageSize = 20;
+                    const maxPages = Math.ceil(stashIds.length / pageSize);
+                    if (isNaN(page) || page < 1) page = 1;
+                    if (page > maxPages) page = maxPages;
+                    this.createPaginationButtons(maxPages, page, pagination.querySelector('ul.pagination'));
+                    const startIndex = (page - 1) * pageSize;
+                    const endIndex = page * pageSize;
+                    stashIds = stashIds.slice(startIndex, endIndex);
+
+                    const scenesList = createElementFromHTML(`<div id="wishlist" class="scenes-list"><div class="row"></div></div>`);
+                    el[0].appendChild(scenesList);
+                    const scenesRow = scenesList.firstChild;
+
                     for (const stashId of stashIds) {
-                        const data = (await this.findStashboxSceneByStashId(stashId))?.data?.findScene;
-                        const { title = '', release_date = '', duration } = data;
-                        const studioName = data?.studio?.name || '';
-                        const studioId = data?.studio?.id || '';
-                        const cover = data?.images[0]?.url;
+                        const sceneState = sceneStates[stashId];
+                        let title, release_date, duration, studioName, studioId, cover;
+                        if (sceneState.data) {
+                            const data = sceneState.data;
+                            title = data.title;
+                            release_date = data.release_date;
+                            duration = data.duration;
+                            studioName = data.studioName;
+                            studioId = data.studioId;
+                            cover = data.cover;
+                        }
+                        else {
+                            const data = (await this.findStashboxSceneByStashId(stashId))?.data?.findScene;
+                            title = data.title;
+                            release_date = data.release_date;
+                            duration = data.duration;
+                            studioName = data?.studio?.name || '';
+                            studioId = data?.studio?.id || '';
+                            cover = data?.images[0]?.url;
+                            sceneState.data = {
+                                title,
+                                release_date,
+                                duration,
+                                studioName,
+                                studioId,
+                                cover
+                            }
+                            await GM.setValue(stashId, JSON.stringify(sceneState));
+                        }
                         const scene = createElementFromHTML(`<div class="col-3">
                         <div class="SceneCard card">
                             <div class="SceneCard-body card-body">
