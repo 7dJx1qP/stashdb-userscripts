@@ -654,6 +654,14 @@
                             const navWishlist = createElementFromHTML(`<a id="nav-wishlist" class="nav-link" href="/wishlist">Wishlist</a>`);
                             el.appendChild(navWishlist);
                         }
+                        if (stashType === 'wishlist') {
+                            document.getElementById('nav-wishlist').classList.add('active');
+                            document.getElementById('nav-wishlist').setAttribute('aria-current', 'page');
+                        }
+                        else {
+                            document.getElementById('nav-wishlist').classList.remove('active');
+                            document.getElementById('nav-wishlist').removeAttribute('aria-current');
+                        }
                     });
 
                     this.dispatchEvent(new CustomEvent('page', { 'detail': { stashType, stashId, action } }));
