@@ -176,6 +176,23 @@
             );
         }
 
+        function toHHMMSS(i) {
+            const sec_num = parseInt(i, 10); // don't forget the second param
+            const hours   = Math.floor(sec_num / 3600);
+            const minutes = Math.floor((sec_num - (hours * 3600)) / 60);
+            const seconds = sec_num - (hours * 3600) - (minutes * 60);
+
+            const parts = [];
+
+            if (hours > 0) {
+                parts.push(hours);
+            }
+            parts.push(String(minutes).padStart(2, '0'));
+            parts.push(String(seconds).padStart(2, '0'));
+
+            return parts.join(':');
+        }
+
         const checkLabel = '<svg aria-hidden="true" focusable="false" data-prefix="fas" data-icon="check" class="svg-inline--fa fa-check fa-w-16 fa-icon fa-fw" role="img" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><path fill="currentColor" d="M173.898 439.404l-166.4-166.4c-9.997-9.997-9.997-26.206 0-36.204l36.203-36.204c9.997-9.998 26.207-9.998 36.204 0L192 312.69 432.095 72.596c9.997-9.997 26.207-9.997 36.204 0l36.203 36.204c9.997 9.997 9.997 26.206 0 36.204l-294.4 294.401c-9.998 9.997-26.207 9.997-36.204-.001z"></path></svg>';
         const timesLabel = '<svg aria-hidden="true" focusable="false" data-prefix="fas" data-icon="times" class="svg-inline--fa fa-times fa-w-11 fa-icon fa-fw" role="img" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 352 512"><path fill="currentColor" d="M242.72 256l100.07-100.07c12.28-12.28 12.28-32.19 0-44.48l-22.24-22.24c-12.28-12.28-32.19-12.28-44.48 0L176 189.28 75.93 89.21c-12.28-12.28-32.19-12.28-44.48 0L9.21 111.45c-12.28 12.28-12.28 32.19 0 44.48L109.28 256 9.21 356.07c-12.28 12.28-12.28 32.19 0 44.48l22.24 22.24c12.28 12.28 32.2 12.28 44.48 0L176 322.72l100.07 100.07c12.28 12.28 32.2 12.28 44.48 0l22.24-22.24c12.28-12.28 12.28-32.19 0-44.48L242.72 256z"></path></svg>';
         const clearLabel = '<svg aria-hidden="true" focusable="false" data-prefix="fas" data-icon="ban" class="svg-inline--fa fa-ban fa-w-16 fa-icon fa-fw" role="img" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><path fill="currentColor" d="M367.2 412.5L99.5 144.8C77.1 176.1 64 214.5 64 256c0 106 86 192 192 192c41.5 0 79.9-13.1 111.2-35.5zm45.3-45.3C434.9 335.9 448 297.5 448 256c0-106-86-192-192-192c-41.5 0-79.9 13.1-111.2 35.5L412.5 367.2zM512 256c0 141.4-114.6 256-256 256S0 397.4 0 256S114.6 0 256 0S512 114.6 512 256z"/></svg>';
@@ -231,6 +248,24 @@
                         onerror: reject
                     });
                 });
+            }
+            async callStashDbGQL(reqData) {
+                const options = {
+                    method: 'POST',
+                    body: JSON.stringify(reqData),
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                }
+
+                try {
+                    const res = await unsafeWindow.fetch('/graphql', options);
+                    this.log.debug(res);
+                    return res.json();
+                }
+                catch (err) {
+                    console.error(err);
+                }
             }
             async findSceneByStashId(id) {
                 const reqData = {
@@ -603,8 +638,106 @@
                     if (location.pathname === '/') {
                         this.log.debug('[Navigation] Home Page');
                     }
+
+                    if (stashType === 'wishlist') {
+                        this.viewWishlist();
+                    }
+                    else {
+                        if (document.getElementById('wishlist')) {
+                            document.getElementById('wishlist').remove();
+                            document.getElementById('wishlist-header').remove();
+                        }
+                    }
+
+                    waitForElementByXpath("//div[contains(@class, 'navbar-nav')]", (xpath, el) => {
+                        if (!document.getElementById('nav-wishlist')) {
+                            const navWishlist = createElementFromHTML(`<a id="nav-wishlist" class="nav-link" href="/wishlist">Wishlist</a>`);
+                            el.appendChild(navWishlist);
+                        }
+                    });
+
                     this.dispatchEvent(new CustomEvent('page', { 'detail': { stashType, stashId, action } }));
                 });
+            }
+            async viewWishlist() {
+                waitForElementClass('NarrowPage', async (className, el) => {
+                    el[0].appendChild(createElementFromHTML(`<div id="wishlist-header" class="d-flex"><h3 class="me-4">Wishlist</h3></div>`));
+                    const scenesList = createElementFromHTML(`<div id="wishlist" class="scenes-list"><div class="row"></div></div>`);
+                    el[0].appendChild(scenesList);
+                    const scenesRow = scenesList.firstChild;
+
+                    const keys = await GM.listValues();
+                    const stashIds = [];
+                    for (const key of keys) {
+                        if (key.startsWith('stash')) continue;
+                        const data = JSON.parse(await GM.getValue(key));
+                        if (data.wanted) {
+                            stashIds.push(key);
+                        }
+                    }
+                    for (const stashId of stashIds) {
+                        const data = (await this.findStashboxSceneByStashId(stashId))?.data?.findScene;
+                        const { title = '', release_date = '', duration } = data;
+                        const studioName = data?.studio?.name || '';
+                        const studioId = data?.studio?.id || '';
+                        const cover = data?.images[0]?.url;
+                        const scene = createElementFromHTML(`<div class="col-3">
+                        <div class="SceneCard card">
+                            <div class="SceneCard-body card-body">
+                                <a class="SceneCard-image" href="/scenes/${stashId}">
+                                    <img alt="" src="${cover}">
+                                    </a>
+                                </div>
+                                <div class="card-footer">
+                                    <div class="d-flex">
+                                        <a class="text-truncate w-100" href="/scenes/${stashId}">
+                                            <h6 class="text-truncate">${title}</h6>
+                                        </a>
+                                        <span class="text-muted">${duration ? toHHMMSS(duration) : ''}</span>
+                                    </div>
+                                    <div class="text-muted">
+                                        <a class="float-end text-truncate SceneCard-studio-name" href="/studios/${studioId}">
+                                            <svg aria-hidden="true" focusable="false" data-prefix="fas" data-icon="video" class="svg-inline--fa fa-video fa-icon me-1" role="img"
+                                                xmlns="http://www.w3.org/2000/svg" viewBox="0 0 576 512">
+                                                <path fill="currentColor" d="M384 112v288c0 26.51-21.49 48-48 48h-288c-26.51 0-48-21.49-48-48v-288c0-26.51 21.49-48 48-48h288C362.5 64 384 85.49 384 112zM576 127.5v256.9c0 25.5-29.17 40.39-50.39 25.79L416 334.7V177.3l109.6-75.56C546.9 87.13 576 102.1 576 127.5z"></path>
+                                            </svg>${studioName}
+                                        </a>
+                                        <strong>${release_date}</strong>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>`);
+                        scenesRow.appendChild(scene);
+                    }
+                });
+            }
+            async findStashboxSceneByStashId(stashId) {
+                const reqData = {
+                    "operationName": "Scene",
+                    "variables": {
+                        "id": stashId
+                    },
+                    "query": `query Scene($id: ID!) {
+                        findScene(id: $id) {
+                            id
+                            release_date
+                            title
+                            deleted
+                            duration
+                            images {
+                                id
+                                url
+                                width
+                                height
+                            }
+                            studio {
+                                id
+                                name
+                            }
+                        }
+                    }`
+                };
+                return this.callStashDbGQL(reqData);
             }
         }
         

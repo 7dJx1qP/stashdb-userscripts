@@ -1,3 +1,15 @@
+.svg-inline--fa {
+  display: var(--fa-display, inline-block);
+  height: 1em;
+  overflow: visible;
+  vertical-align: -0.125em;
+}
+
+.nav-link .fa-gear {
+  width: 24px;
+  height: 24px;
+}
+
 .stash_id_match a:hover {
   background-color: rgba(0, 0, 0, 0.541);
   color: #fff !important;
