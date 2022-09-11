@@ -59,7 +59,6 @@ def build():
 // @grant       GM.setValue
 // @grant       GM.listValues
 // @grant       GM.xmlHttpRequest
-// @connect     localhost
 // @require     {locallibfile}
 //
 // **************************************************************************************************
@@ -89,7 +88,6 @@ def build():
 // @grant       GM.setValue
 // @grant       GM.listValues
 // @grant       GM.xmlHttpRequest
-// @connect     localhost
 // @require     {distlibfile}
 //
 // **************************************************************************************************
