@@ -364,82 +364,81 @@
                             });
                             menuEl.appendChild(gotoSceneEl);
                         }
-                        else {
-                            const ignoreEl = createElementFromHTML(`<a class="dropdown-item" style="color: black; padding: 5px; text-decoration: none"></a>`);
-                            const wishlistEl = createElementFromHTML(`<a class="dropdown-item" style="color: black; padding: 5px; text-decoration: none">></a>`);
 
-                            if (sceneState.ignored) {
-                                ignoreEl.innerText = 'Clear Ignore';
+                        const ignoreEl = createElementFromHTML(`<a class="dropdown-item" style="color: black; padding: 5px; text-decoration: none"></a>`);
+                        const wishlistEl = createElementFromHTML(`<a class="dropdown-item" style="color: black; padding: 5px; text-decoration: none">></a>`);
 
-                                ignoreEl.addEventListener("click", async evt => {
-                                    evt.preventDefault();
-                                    evt.stopImmediatePropagation();
-                                    sceneState.ignored = false;
-                                    sceneEl.classList.remove('stash_id_ignored');
-                                    markerEl.querySelector('a').innerHTML = timesLabel;
-                                    menuEl.remove();
-                                    await GM.setValue(stashId, JSON.stringify(sceneState));
-                                });
-                    
-                                  menuEl.append(ignoreEl);
-                            }
-                            else if (sceneState.wanted) {
-                                wishlistEl.innerText = 'Remove From Wishlist';
-                    
-                                wishlistEl.addEventListener("click", async evt => {
-                                    evt.preventDefault();
-                                    evt.stopImmediatePropagation();
-                                    sceneState.wanted = false;
-                                    sceneEl.classList.remove('stash_id_wanted');
-                                    markerEl.querySelector('a').innerHTML = timesLabel;
-                                    menuEl.remove();
-                                    await GM.setValue(stashId, JSON.stringify(sceneState));
-                                });
-                    
-                                  menuEl.append(wishlistEl);
-                            }
-                            else {
-                                wishlistEl.innerText = 'Add to Wishlist';
-                                ignoreEl.innerText = 'Ignore Scene';
-                    
-                                wishlistEl.addEventListener("click", async evt => {
-                                    evt.preventDefault();
-                                    evt.stopImmediatePropagation();
-                                    sceneState.wanted = true;
-                                    sceneEl.classList.add('stash_id_wanted');
-                                    markerEl.querySelector('a').innerHTML = starLabel;
-                                    menuEl.remove();
-                                    if (!sceneState.data) {
-                                        const data = (await this.findStashboxSceneByStashId(stashId))?.data?.findScene;
-                                        const { title = '', release_date = '', duration } = data;
-                                        const studioName = data?.studio?.name || '';
-                                        const studioId = data?.studio?.id || '';
-                                        const cover = data?.images[0]?.url;
-                                        sceneState.data = {
-                                            title,
-                                            release_date,
-                                            duration,
-                                            studioName,
-                                            studioId,
-                                            cover
-                                        }
+                        if (sceneState.ignored) {
+                            ignoreEl.innerText = 'Clear Ignore';
+
+                            ignoreEl.addEventListener("click", async evt => {
+                                evt.preventDefault();
+                                evt.stopImmediatePropagation();
+                                sceneState.ignored = false;
+                                sceneEl.classList.remove('stash_id_ignored');
+                                markerEl.querySelector('a').innerHTML = localId ? checkLabel : timesLabel;
+                                menuEl.remove();
+                                await GM.setValue(stashId, JSON.stringify(sceneState));
+                            });
+
+                            menuEl.append(ignoreEl);
+                        }
+                        else if (sceneState.wanted) {
+                            wishlistEl.innerText = 'Remove From Wishlist';
+
+                            wishlistEl.addEventListener("click", async evt => {
+                                evt.preventDefault();
+                                evt.stopImmediatePropagation();
+                                sceneState.wanted = false;
+                                sceneEl.classList.remove('stash_id_wanted');
+                                markerEl.querySelector('a').innerHTML = localId ? checkLabel : timesLabel;
+                                menuEl.remove();
+                                await GM.setValue(stashId, JSON.stringify(sceneState));
+                            });
+
+                            menuEl.append(wishlistEl);
+                        }
+                        else if (!localId) {
+                            wishlistEl.innerText = 'Add to Wishlist';
+                            ignoreEl.innerText = 'Ignore Scene';
+
+                            wishlistEl.addEventListener("click", async evt => {
+                                evt.preventDefault();
+                                evt.stopImmediatePropagation();
+                                sceneState.wanted = true;
+                                sceneEl.classList.add('stash_id_wanted');
+                                markerEl.querySelector('a').innerHTML = starLabel;
+                                menuEl.remove();
+                                if (!sceneState.data) {
+                                    const data = (await this.findStashboxSceneByStashId(stashId))?.data?.findScene;
+                                    const { title = '', release_date = '', duration } = data;
+                                    const studioName = data?.studio?.name || '';
+                                    const studioId = data?.studio?.id || '';
+                                    const cover = data?.images[0]?.url;
+                                    sceneState.data = {
+                                        title,
+                                        release_date,
+                                        duration,
+                                        studioName,
+                                        studioId,
+                                        cover
                                     }
-                                    await GM.setValue(stashId, JSON.stringify(sceneState));
-                                });
+                                }
+                                await GM.setValue(stashId, JSON.stringify(sceneState));
+                            });
 
-                                ignoreEl.addEventListener("click", async evt => {
-                                    evt.preventDefault();
-                                    evt.stopImmediatePropagation();
-                                    sceneState.ignored = true;
-                                    sceneEl.classList.add('stash_id_ignored');
-                                    markerEl.querySelector('a').innerHTML = clearLabel;
-                                    menuEl.remove();
-                                    await GM.setValue(stashId, JSON.stringify(sceneState));
-                                });
+                            ignoreEl.addEventListener("click", async evt => {
+                                evt.preventDefault();
+                                evt.stopImmediatePropagation();
+                                sceneState.ignored = true;
+                                sceneEl.classList.add('stash_id_ignored');
+                                markerEl.querySelector('a').innerHTML = clearLabel;
+                                menuEl.remove();
+                                await GM.setValue(stashId, JSON.stringify(sceneState));
+                            });
 
-                                menuEl.append(wishlistEl);
-                                menuEl.append(ignoreEl);
-                            }
+                            menuEl.append(wishlistEl);
+                            menuEl.append(ignoreEl);
                         }
 
                         if(!isInViewport(menuEl)) {
