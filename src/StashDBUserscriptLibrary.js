@@ -606,7 +606,8 @@
                         (stashType === 'scenes' && !stashId) ||
                         (stashType === 'performers' && stashId && !action) ||
                         (stashType === 'studios' && stashId && !action) ||
-                        (stashType === 'tags' && stashId && !action)) {
+                        (stashType === 'tags' && stashId && !action) ||
+                        (stashType === 'wishlist' && !stashId)) {
                         waitForElementByXpath('(//div[contains(@class, "HomePage-scenes")]/div[@class="col"]|//div[@class="scenes-list"]/div[@class="row"]/div[@class="col-3"])/div[contains(@class, "SceneCard")]', (xpath, el) => {
                             const sceneCards = document.querySelectorAll('.row .SceneCard');
                             for (const sceneCard of sceneCards) {
