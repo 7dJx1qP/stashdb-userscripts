@@ -51,7 +51,8 @@
   width: 24px;
 }
 
-.stash-performer-link img {
+.stash-performer-link img,
+.stash-scene-link img {
   width: 2rem;
   padding-left: 0.5rem;
 }

@@ -2,7 +2,7 @@
 // @name        StashDB Userscripts Bundle
 // @namespace   https://github.com/7dJx1qP/stashdb-userscripts
 // @description StashDB Userscripts Bundle
-// @version     0.2.5
+// @version     0.3.0
 // @author      7dJx1qP
 // @match       https://stashdb.org/*
 // @resource    IMPORTED_CSS https://raw.githubusercontent.com/7dJx1qP/stashdb-userscripts/master/dist/public/scene.css

@@ -285,6 +285,23 @@
                 }
                 return this.callGQL(reqData);
             }
+            async findStudioByStashId(id) {
+                const reqData = {
+                    "variables": { id },
+                    "query": `query FindStudioByStashId($id: String!) {
+                        findStudios(studio_filter: {stash_id: {value: $id, modifier: EQUALS}}) {
+                            studios {
+                                stash_ids {
+                                    endpoint
+                                    stash_id
+                                }
+                                id
+                            }
+                        }
+                    }`
+                }
+                return this.callGQL(reqData);
+            }
             /*async processScenes(data) {
                 if (data?.data?.queryScenes?.scenes) {
                     return Promise.all(data?.data?.queryScenes?.scenes.map(scene => this.processListScene(scene.id)));
@@ -518,7 +535,7 @@
                         const url = new URL(scenePerformer.href);
                         const stashId = url.pathname.replace('/performers/', '');
                         this.createStashPerformerLink(stashId, function (performerLink) {
-                        header.insertBefore(performerLink, scenePerformer);
+                            header.insertBefore(performerLink, scenePerformer);
                         });
                     }
                 }
@@ -536,6 +553,154 @@
                                 window.open(performerLink.href, '_blank');
                             });
                         });
+                    }
+                }
+            }
+            processEdits() {
+                for (const sceneEdit of document.querySelectorAll('.EditCard')) {
+                    this.processEdit(sceneEdit);
+                }
+            }
+            processEdit(sceneEdit) {
+                const header = sceneEdit.querySelector('.card-header h5');
+                const [editOp, editType] = header.innerText.split(' ');
+                console.log('edit', sceneEdit, editOp, editType);
+                const performerNodes = [];
+                let sceneStudioNodes = [];
+                if (editOp === 'Merge') {
+                    if (editType === 'Performer') {
+                        // performer links
+                        const nodes = getElementsByXpath(".//div[@class='card-body']//div[text()='Merge' or text()='Into']/following-sibling::div[@class='col-10']//a", sceneEdit);
+                        let node = null;
+                        while (node = nodes.iterateNext()) {
+                            performerNodes.push(node);
+                        }
+                    }
+                }
+                if (editOp === 'Create') {
+                    if (editType === 'Performer') {
+                        // performer link
+                        const scenePerformer = getElementByXpath(".//div[@class='card-body']/div[contains(@class, 'row')]/div[contains(@class, 'ps-3')]/a", sceneEdit);
+                        performerNodes.push(scenePerformer);
+                    }
+                    else if (editType === 'Scene') {
+                        // performer links
+                        let nodes = getElementsByXpath(".//div[@class='card-body']//div[contains(@class, 'ListChangeRow-Performers')]//li/a", sceneEdit);
+                        let node = null;
+                        while (node = nodes.iterateNext()) {
+                            performerNodes.push(node);
+                        }
+
+                        // scene/studio link
+                        nodes = getElementsByXpath(".//div[@class='card-body']/div[contains(@class, 'row')]/div[contains(@class, 'ps-3')]/a", sceneEdit);
+                        while (node = nodes.iterateNext()) {
+                            sceneStudioNodes.push(node);
+                        }
+
+                        // studio link
+                        const studioNode = getElementByXpath(".//div[@class='card-body']//b[text()='Studio']/following-sibling::div[@class='col-10']//a", sceneEdit);
+                        sceneStudioNodes.push(studioNode);
+                    }
+                }
+                else if (editOp === 'Modify') {
+                    if (editType === 'Performer') {
+                        // performer link
+                        const scenePerformer = getElementByXpath(".//div[@class='card-body']/div[contains(@class, 'row')]/div[contains(@class, 'col')]/a", sceneEdit);
+                        performerNodes.push(scenePerformer);
+                    }
+                    else if (editType === 'Scene') {
+                        // performer links
+                        let nodes = getElementsByXpath(".//div[@class='card-body']//div[contains(@class, 'ListChangeRow-Performers')]//li/a", sceneEdit);
+                        let node = null;
+                        while (node = nodes.iterateNext()) {
+                            performerNodes.push(node);
+                        }
+
+                        // scene link
+                        nodes = getElementsByXpath(".//div[@class='card-body']/div[contains(@class, 'row')]/div[contains(@class, 'col')]/a", sceneEdit);
+                        while (node = nodes.iterateNext()) {
+                            sceneStudioNodes.push(node);
+                        }
+
+                        // studio links
+                        nodes = getElementsByXpath(".//div[@class='card-body']//b[text()='Studio']/following-sibling::div//a", sceneEdit);
+                        while (node = nodes.iterateNext()) {
+                            sceneStudioNodes.push(node);
+                        }
+                    }
+                }
+                else if (editOp === 'Destroy') {
+                    if (editType === 'Performer') {
+                        // performer link
+                        const scenePerformer = getElementByXpath(".//div[@class='card-body']/div[contains(@class, 'row')]/div[contains(@class, 'col')]//a", sceneEdit);
+                        performerNodes.push(scenePerformer);
+                    }
+                    else if (editType === 'Scene') {
+                        // scene link
+                        let nodes = getElementsByXpath(".//div[@class='card-body']/div[contains(@class, 'row')]/div[contains(@class, 'col')]//a", sceneEdit);
+                        let node = null;
+                        while (node = nodes.iterateNext()) {
+                            sceneStudioNodes.push(node);
+                        }
+                    }
+                    else if (editType === 'Studio') {
+                        // studio link
+                        let nodes = getElementsByXpath(".//div[@class='card-body']/div[contains(@class, 'row')]/div[contains(@class, 'col')]//a", sceneEdit);
+                        let node = null;
+                        while (node = nodes.iterateNext()) {
+                            sceneStudioNodes.push(node);
+                        }
+                    }
+                }
+
+                for (const scenePerformer of performerNodes) {
+                    if (scenePerformer && !scenePerformer.parentElement.querySelector('.stash-performer-link')) {
+                        const url = new URL(scenePerformer.href);
+                        const stashId = url.pathname.replace('/performers/', '');
+                        this.createStashPerformerLink(stashId, function (performerLink) {
+                            scenePerformer.parentElement.appendChild(performerLink);
+                        });
+                    }
+                }
+
+                for (const sceneNode of sceneStudioNodes) {
+                    console.log('sceneNode', sceneNode);
+                    if (sceneNode && !sceneNode.parentElement.querySelector('.stash-scene-link')) {
+                        const url = new URL(sceneNode.href);
+                        if (url.pathname.startsWith('/scenes/')) {
+                            const stashId = url.pathname.replace('/scenes/', '');
+                            this.findSceneByStashId(stashId).then(data => {
+                                const localId = data?.data?.findScenes?.scenes[0]?.id;
+                                if (localId) {
+                                    const localLink = this.stashUrl + '/scenes/' + localId;
+                                    const performerLink = document.createElement('a');
+                                    performerLink.classList.add('stash-scene-link');
+                                    performerLink.href = localLink;
+                                    const stashIcon = document.createElement('img');
+                                    stashIcon.src = STASH_IMAGE;
+                                    performerLink.appendChild(stashIcon);
+                                    performerLink.setAttribute('target', '_blank');
+                                    insertAfter(performerLink, sceneNode);
+                                }
+                            });
+                        }
+                        else {
+                            const stashId = url.pathname.replace('/studios/', '');
+                            this.findStudioByStashId(stashId).then(data => {
+                                const localId = data?.data?.findStudios?.studios[0]?.id;
+                                if (localId) {
+                                    const localLink = this.stashUrl + '/studios/' + localId;
+                                    const performerLink = document.createElement('a');
+                                    performerLink.classList.add('stash-studio-link');
+                                    performerLink.href = localLink;
+                                    const stashIcon = document.createElement('img');
+                                    stashIcon.src = STASH_IMAGE;
+                                    performerLink.appendChild(stashIcon);
+                                    performerLink.setAttribute('target', '_blank');
+                                    insertAfter(performerLink, sceneNode);
+                                }
+                            });
+                        }
                     }
                 }
             }
@@ -648,6 +813,28 @@
                         waitForElementClass('SearchPage-performer', (className, el) => {
                             this.addStashSearchPerformerLink();
                         });
+                    }
+                    else if (stashType === 'users' && stashId && action === 'edits') {
+                        console.log('user edits');
+                        waitForElementByXpath("//div[contains(@class, 'EditCard')]|//h4[text()='No results']", (xpath, el) => {
+                            this.processEdits();
+                        });
+                    }
+                    else if (stashType === 'edits') {
+                        if (stashId) {
+                            // specific edit page
+                            console.log('edit page');
+                            waitForElementByXpath("//div[contains(@class, 'EditCard')]|//h4[text()='No results']", (xpath, el) => {
+                                this.processEdits();
+                            });
+                        }
+                        else {
+                            // all edits page
+                            console.log('edits page');
+                            waitForElementByXpath("//div[contains(@class, 'EditCard')]|//h4[text()='No results']", (xpath, el) => {
+                                this.processEdits();
+                            });
+                        }
                     }
 
                     if (location.pathname === '/') {
