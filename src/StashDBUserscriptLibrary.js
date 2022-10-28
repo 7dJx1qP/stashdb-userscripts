@@ -490,6 +490,7 @@
                     });
                     parentElement.appendChild(markerEl);
                 }
+                this.dispatchEvent(new CustomEvent('scenecard', { 'detail': { sceneEl } }));
                 return markerEl;
             }
             async createStashPerformerLink(stashId, callback) {
