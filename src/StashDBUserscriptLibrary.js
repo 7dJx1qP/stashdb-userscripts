@@ -1,6 +1,6 @@
 // StashDB Userscript Library
 // Exports utility functions and a StashDB class that emits events whenenever a page navigation change is detected
-// version 0.1.0
+// version 0.2.0
 
 (function () {
     'use strict';
@@ -269,9 +269,17 @@
             }
             async findSceneByStashId(id) {
                 const reqData = {
-                    "variables": { id },
-                    "query": `query FindSceneByStashId($id: String!) {
-                        findScenes(scene_filter: {stash_id: {value: $id, modifier: EQUALS}}) {
+                    "variables": {
+                        "scene_filter": {
+                            "stash_id_endpoint": {
+                                "endpoint": "",
+                                "stash_id": id,
+                                "modifier": "EQUALS"
+                            }
+                        }
+                    },
+                    "query": `query FindSceneByStashId($scene_filter: SceneFilterType) {
+                        findScenes(scene_filter: $scene_filter) {
                             scenes {
                                 title
                                 stash_ids {
@@ -287,9 +295,17 @@
             }
             async findStudioByStashId(id) {
                 const reqData = {
-                    "variables": { id },
-                    "query": `query FindStudioByStashId($id: String!) {
-                        findStudios(studio_filter: {stash_id: {value: $id, modifier: EQUALS}}) {
+                    "variables": {
+                        "studio_filter": {
+                            "stash_id_endpoint": {
+                                "endpoint": "",
+                                "stash_id": id,
+                                "modifier": "EQUALS"
+                            }
+                        }
+                    },
+                    "query": `query FindStudioByStashId($studio_filter: StudioFilterType) {
+                        findStudios(studio_filter: $studio_filter) {
                             studios {
                                 stash_ids {
                                     endpoint
@@ -306,8 +322,9 @@
                 const reqData = {
                     "variables": {
                         "performer_filter": {
-                            "stash_id": {
-                                "value": id,
+                            "stash_id_endpoint": {
+                                "endpoint": "",
+                                "stash_id": id,
                                 "modifier": "EQUALS"
                             }
                         }
@@ -497,8 +514,9 @@
                 const reqData = {
                     "variables": {
                         "performer_filter": {
-                            "stash_id": {
-                                "value": stashId,
+                            "stash_id_endpoint": {
+                                "endpoint": "",
+                                "stash_id": stashId,
                                 "modifier": "EQUALS"
                             }
                         }

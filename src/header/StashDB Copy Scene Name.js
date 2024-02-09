@@ -1,7 +1,7 @@
 // ==UserScript==
-// @name        StashDB Scene Filter
+// @name        StashDB Copy Scene Name
 // @namespace   https://github.com/7dJx1qP/stashdb-userscripts
-// @description StashDB Scene Filter
+// @description StashDB Copy Scene Name
 // @version     0.2.0
 // @author      7dJx1qP
 // @match       https://stashdb.org/*

@@ -2,7 +2,7 @@
 // @name        StashDB Userscripts Bundle
 // @namespace   https://github.com/7dJx1qP/stashdb-userscripts
 // @description StashDB Userscripts Bundle
-// @version     0.4.0
+// @version     0.5.0
 // @author      7dJx1qP
 // @match       https://stashdb.org/*
 // @resource    IMPORTED_CSS https://raw.githubusercontent.com/7dJx1qP/stashdb-userscripts/master/dist/public/scene.css
@@ -20,6 +20,7 @@
 // *            YOU MAY REMOVE ANY OF THE @require LINES BELOW FOR SCRIPTS YOU DO NOT WANT          *
 // **************************************************************************************************
 //
+// @require     https://raw.githubusercontent.com/7dJx1qP/stashdb-userscripts/master/src/body\StashDB Copy Scene Name.js
 // @require     https://raw.githubusercontent.com/7dJx1qP/stashdb-userscripts/master/src/body\StashDB Copy StashID.user.js
 // @require     https://raw.githubusercontent.com/7dJx1qP/stashdb-userscripts/master/src/body\StashDB Scene Filter.user.js
 
