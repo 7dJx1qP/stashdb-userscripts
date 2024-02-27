@@ -650,7 +650,7 @@
                 const location = window.location;
                 this.log.debug(URL, window.location);
 
-                waitForElementByXpath('//button[contains(@class, "login-button")]|//span[text()="Logged in as"]/following-sibling::a', async (xpath, el) => {
+                waitForElementByXpath('//div[contains(@class, "align-items-center") and contains(@class, "navbar-nav")]//a', async (xpath, el) => {
                     this.loggedIn = el.tagName === 'A';
                     this.userName = this.loggedIn ? el.innerText : null;
 

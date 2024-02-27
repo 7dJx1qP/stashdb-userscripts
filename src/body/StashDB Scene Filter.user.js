@@ -65,6 +65,7 @@
     stashdb.addEventListener('scenecard', evt => {
         const { sceneEl } = evt.detail;
         const dropdown = document.querySelector('.visible-filter select');
+        if (!dropdown) return;
         sceneEl.parentElement.classList.remove('d-none');
         if (dropdown.value === 'OWNED' && sceneEl.querySelector('.match-no')) {
             sceneEl.parentElement.classList.add('d-none');
